@@ -51,13 +51,11 @@
           <h3>Table of contents</h3>
           <ul class="content-table">
             <li><a href="#node-expansion">Node Expansion</a></li>
-            <li><a href="#search-agent">Getting in the shoes of a Search Agent</a></li>
             <li><a href="#breadth-first-search">Breadth First Search</a></li>
             <li><a href="#depth-first-search">Depth First Search</a></li>
             <li><a href="#step-costs">Step Costs</a></li>
             <li><a href="#uniform-cost-search">Uniform Cost Search</a></li>
             <li><a href="#depth-limited-search">Depth Limited Search</a></li>
-            <li><a href="#iterative-deepening">Iterative Deepening Depth-First Search</a></li>
             <li><a href="#bi-directional-bfs">Bi-directional BFS</a></li>
             <li><a href="#aStarSearchBox">A Star Search</a></li>
           </ul>
@@ -99,15 +97,7 @@
           </div>
         </div>
       </div>
-      <div class="row">
-        <div class="col-md-6">
-          <h2 id="search-agent">Getting in the shoes of a Search Agent</h2>
-          <p>
-            Let's see the prespective of a Search Agent as it searches through the graph.
-            <br> Remember, the Agent can only see the nodes which are either expanded or currently present in the frontier.
-          </p>
-        </div>
-      </div>
+      
 
       <div class="row">
         <div class="col-md-6">
@@ -356,50 +346,7 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6">
-          <h2 id="iterative-deepening">Iterative Deepening Depth-First Search</h2>
-          <p>
-            Iterative Deepening Depth-First Search is a general strategy that is used to find the best depth limit. It does this by applying Depth Limited Search to the given problem with increasing depth limit. (0, 1, 2, 3 and so on.)
-          </p>
-          <p>
-            Given below is a search tree which is traversed using Iterative Deepening Depth-First Search. The depth-limit is varied from 0 to 5 and Depth Limited Search is applied with that limit.
-          </p>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6">
-          <div class='btn btn-primary' id='idRestartButton'>Restart</div>
-          <div class="row">
-
-            <div class="form-group col-md-4">
-              <h4>Depth Limit : </h4>
-              <input disabled type="range" id="idlimitSelector" name="rangeInput" step="1" min="0" max="5" value="0">
-              <label id="idlimitSelectorText">0</label>
-            </div>
-          </div>
-          <div class="row">
-            <div class="canvas" id="iterativeDeepeningCanvas" height="300px">
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="notes">
-            <ul type="none" id='idLegend'>
-              <li>
-                <i id='idExpanded' class="legend-item"></i> Expanded Nodes
-              </li>
-              <li>
-                <i id='idFrontier' class="legend-item"></i> Frontier Nodes
-              </li>
-              <li>
-                <i id='idUnexplored' class="legend-item"></i> Unexplored/Unknown Nodes
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+   
       <h2 id="bi-directional-bfs">Bi-directional BFS</h2>
       <p>In bi-directional BFS, we run two simultaneous searches, one from the initial state and one from the goal state. We stop when these searches meet in the middle (ie, a node is explored by both the BFS)</p>
       <p>The motivation behind this is that <b>b<sup>d/2</sup> + b<sup>d/2</sup> is smaller than b<sup>d</sup></b></p>
