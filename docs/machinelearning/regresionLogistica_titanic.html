@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción de Supervivencia Titanic</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 350px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #005fcc;
+        }
+
+        .resultado {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Predicción Supervivencia Titanic</h2>
+
+        <select id="categoria">
+            <option value="">Seleccione Categoría</option>
+            <option value="1">1ª Clase</option>
+            <option value="2">2ª Clase</option>
+            <option value="3">3ª Clase</option>
+        </select>
+
+        <select id="sexo">
+            <option value="">Seleccione Sexo</option>
+            <option value="0">Masculino</option>
+            <option value="1">Femenino</option>
+        </select>
+
+        <input type="number" id="edad" placeholder="Edad" step="0.1">
+        <input type="number" id="hermanos" placeholder="Número de Hermanos" step="1">
+        <input type="number" id="hijos" placeholder="Número de Hijos/Padres" step="1">
+
+        <button onclick="calcularSupervivencia()">Calcular</button>
+
+        <div id="resultado" class="resultado"></div>
+    </div>
+
+    <script>
+        function calcularSupervivencia() {
+            const coeficientes = [-1.17270894, -2.69232678, -0.04433627, -0.34766152, -0.08444122];
+            const intercepto = 5.284587;
+
+            const categoria = parseFloat(document.getElementById("categoria").value);
+            const sexo = parseFloat(document.getElementById("sexo").value);
+            const edad = parseFloat(document.getElementById("edad").value);
+            const hermanos = parseFloat(document.getElementById("hermanos").value);
+            const hijos = parseFloat(document.getElementById("hijos").value);
+
+            if ([categoria, sexo, edad, hermanos, hijos].some(v => isNaN(v))) {
+                document.getElementById("resultado").innerHTML = "Por favor complete todos los campos correctamente.";
+                return;
+            }
+
+            // Calcular z
+            const z = intercepto + 
+                      coeficientes[0] * categoria +
+                      coeficientes[1] * sexo +
+                      coeficientes[2] * edad +
+                      coeficientes[3] * hermanos +
+                      coeficientes[4] * hijos;
+
+            // Clasificación
+            const supervivencia = z > 0 ? 1 : 0;
+
+            document.getElementById("resultado").innerHTML = "Predicción: " + (supervivencia === 1 ? "Sobrevive ✅" : "No Sobrevive ❌");
+        }
+    </script>
+
+</body>
+</html>

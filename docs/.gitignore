@@ -1,8 +1,0 @@
-*-compiled*
-node_modules
-jspm_packages
-.idea/
-.vscode
-jsconfig.json
-build/
-package-lock.json

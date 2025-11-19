@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor °C a °F (IA con TensorFlow.js)</title>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0"></script>
+
+  <!-- ✅ Estilo claro y moderno -->
+  <style>
+    :root {
+      --azul: #0078d7;
+      --azul-hover: #005fa3;
+      --fondo: #f7f9fc;
+      --texto: #333;
+      --borde: #ddd;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--fondo);
+      color: var(--texto);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      color: var(--azul);
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .container {
+      background-color: #fff;
+      border: 1px solid var(--borde);
+      border-radius: 12px;
+      padding: 30px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--azul);
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--azul);
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      margin-top: 15px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: var(--azul-hover);
+    }
+
+    .resultado {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--texto);
+      min-height: 30px;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Conversor °C → °F (IA)</h1>
+
+  <div class="container">
+    <p>Introduce una temperatura en grados Celsius:</p>
+    <input type="number" id="inputCelsius" placeholder="Ejemplo: 25" />
+    <button onclick="convertir()">Convertir</button>
+
+    <div class="resultado" id="resultado">°F: —</div>
+  </div>
+
+  <footer>Desarrollado con TensorFlow.js</footer>
+
+  <script>
+    let model;
+
+    // 🔁 Cargar el modelo al iniciar
+    async function loadModel() {
+      try {
+        model = await tf.loadGraphModel('folder/model.json');
+        console.log("✅ Modelo cargado correctamente");
+      } catch (err) {
+        console.error("❌ Error cargando modelo:", err);
+        alert("No se pudo cargar el modelo. Revisa la consola.");
+      }
+    }
+
+    // 🎯 Función de conversión
+    async function convertir() {
+      const entrada = document.getElementById('inputCelsius').value;
+      const resultado = document.getElementById('resultado');
+
+      if (entrada === "") {
+        resultado.textContent = "Por favor ingresa un valor.";
+        return;
+      }
+
+      if (!model) {
+        resultado.textContent = "Cargando modelo...";
+        return;
+      }
+
+      const valor = parseFloat(entrada);
+      const tensorEntrada = tf.tensor2d([valor], [1, 1]);
+
+      // Ejecutar el modelo
+      let prediccion;
+      try {
+        prediccion = model.predict
+          ? model.predict(tensorEntrada)
+          : model.execute(tensorEntrada);
+      } catch (e) {
+        resultado.textContent = "Error al predecir.";
+        console.error(e);
+        return;
+      }
+
+      const salida = (await prediccion.data())[0];
+      resultado.textContent = `°F: ${salida.toFixed(2)}`;
+    }
+
+    loadModel();
+  </script>
+</body>
+</html>

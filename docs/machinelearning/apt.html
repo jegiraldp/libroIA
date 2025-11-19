@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Predicción Alquiler — Modelo TFJS</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
+  <style>
+    :root{
+      --bg: #f8fafb; /* very light */
+      --card: #ffffff;
+      --muted: #78808a;
+      --accent: #7fb3c8; /* pastel teal */
+      --accent-2: #f6c9d8; /* pastel pink */
+      --radius: 14px;
+      --glass: rgba(255,255,255,0.6);
+    }
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: linear-gradient(180deg, #fcfeff 0%, #f2fbff 100%); color:#24323a}
+    .wrap{max-width:980px;margin:40px auto;padding:28px;display:grid;grid-template-columns:1fr 420px;gap:28px}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:0 6px 18px rgba(36,50,58,0.06);padding:22px}
+    h1{margin:0 0 6px;font-size:20px}
+    p.lead{margin:0 0 18px;color:var(--muted)}
+
+    form .row{display:flex;gap:12px;margin-bottom:12px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=number], select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e6eef3;background:var(--glass);font-size:14px}
+    input[type=checkbox]{transform:scale(1.15);margin-right:8px}
+    .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{background:var(--accent);color:white;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:600}
+    .btn.secondary{background:var(--accent-2);color:#3b3b3b}
+
+    .preview{display:flex;flex-direction:column;gap:12px}
+    .result{font-size:22px;font-weight:700;color:#0f3b4a}
+    .meta{font-size:13px;color:var(--muted)}
+
+    .small{font-size:12px;color:var(--muted)}
+
+    /* responsive */
+    @media (max-width:960px){.wrap{grid-template-columns:1fr;padding:16px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Predicción de Alquiler</h1>
+      <p class="lead">Ingresa las características de la vivienda y presiona <strong>Predecir</strong>. Estilo claro, tonos pastel.</p>
+
+      <form id="form">
+        <!-- Inputs: 8 features in the exact order the model expects -->
+        <div class="controls">
+          <div>
+            <label for="cityCode">Código ciudad (entero)</label>
+            <input id="cityCode" type="number" value="0" step="1" min="0" />
+          </div>
+          <div>
+            <label for="meters">Metros cuadrados</label>
+            <input id="meters" type="number" value="60" step="1" min="0" />
+          </div>
+        </div>
+
+        <div class="controls">
+          <div>
+            <label for="rooms">Número habitaciones</label>
+            <input id="rooms" type="number" value="2" step="1" min="0" />
+          </div>
+          <div>
+            <label for="floors">Número pisos</label>
+            <input id="floors" type="number" value="3" step="1" min="0" />
+          </div>
+        </div>
+
+        <div class="controls">
+          <div>
+            <label for="elevator">¿Tiene ascensor?</label>
+            <select id="elevator">
+              <option value="0">0 — No</option>
+              <option value="1">1 — Sí</option>
+            </select>
+          </div>
+          <div>
+            <label for="exterior">¿Da a la exterior?</label>
+            <select id="exterior">
+              <option value="0">0 — No</option>
+              <option value="1">1 — Sí</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div>
+            <label for="state">Estado del apartamento</label>
+            <select id="state">
+              <option value="0">0 — No arreglado</option>
+              <option value="1">1 — Arreglado</option>
+              <option value="2">2 — Nuevo</option>
+            </select>
+          </div>
+          <div>
+            <label for="central">¿Es céntrica?</label>
+            <select id="central">
+              <option value="0">0 — No</option>
+              <option value="1">1 — Sí</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn" type="button" id="predictBtn">Predecir</button>
+          <button class="btn secondary" type="button" id="fillExample">Cargar ejemplo</button>
+        </div>
+
+        <p class="small" style="margin-top:10px">Nota: el modelo espera exactamente 8 entradas en el orden: <em>cityCode, metros, habitaciones, pisos, ascensor, exterior, estado, céntrica</em>.</p>
+      </form>
+    </div>
+
+    <aside class="card preview">
+      <div>
+        <h2 style="margin:0 0 6px">Resultado</h2>
+        <div class="meta">Estado del modelo: <span id="modelStatus">cargando...</span></div>
+      </div>
+
+      <div style="padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(127,179,200,0.08), rgba(246,201,216,0.04))">
+        <div class="result" id="prediction">—</div>
+        <div class="meta" id="details">Ingrese datos y presione Predecir.</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <button class="btn" id="downloadModel" type="button">Ver ruta modelo (debug)</button>
+      </div>
+
+      <div style="margin-top:12px" class="small">Instrucciones: coloque la carpeta del modelo TensorFlow.js (model.json + pesos) en una carpeta llamada <code>model</code> al lado de este archivo, y sirva la página desde un servidor (p. ej. <code>python -m http.server</code>).</div>
+    </aside>
+  </div>
+
+  <script>
+    // Ruta por defecto del modelo (ajuste aquí si su carpeta tiene otro nombre)
+    const MODEL_PATH = './folderA/model.json';
+
+    let model = null;
+
+    const $ = id => document.getElementById(id);
+
+    async function init(){
+      try{
+        $('modelStatus').textContent = 'cargando modelo...';
+        model = await tf.loadGraphModel(MODEL_PATH);
+        $('modelStatus').textContent = 'modelo cargado ✅';
+      }catch(err){
+        console.error(err);
+        $('modelStatus').textContent = 'error cargando modelo — compruebe la ruta y que los archivos estén en ./folderA/';
+      }
+    }
+
+    function readInputs(){
+      // leer los 8 valores en el orden exacto
+      const values = [
+        Number($('cityCode').value || 0),
+        Number($('meters').value || 0),
+        Number($('rooms').value || 0),
+        Number($('floors').value || 0),
+        Number($('elevator').value || 0),
+        Number($('exterior').value || 0),
+        Number($('state').value || 0),
+        Number($('central').value || 0)
+      ];
+      return values;
+    }
+
+    function formatCurrency(n){
+      if (!isFinite(n)) return '—';
+      // formatear como moneda simple
+      return new Intl.NumberFormat('es-CO', {style:'currency',currency:'COP', maximumFractionDigits:0}).format(Math.round(n));
+    }
+
+    async function predict(){
+      if(!model){
+        alert('El modelo no está cargado. Asegúrese de haber puesto folder/model.json y servir la página desde un servidor.');
+        return;
+      }
+
+      const inputs = readInputs();
+      // modelo creado en Keras espera shape [batch, 8]
+      const inputTensor = tf.tensor2d([inputs]);
+      // si su modelo fue entrenado con normalización deberá replicarla aquí
+      try{
+        const out = model.predict(inputTensor);
+        const val = (await out.data())[0];
+        $('prediction').textContent = formatCurrency(val);
+        $('details').textContent = `Valores de entrada: [${inputs.join(', ')}]`;
+        // liberar tensores
+        tf.dispose([inputTensor, out]);
+      }catch(err){
+        console.error(err);
+        alert('Error durante la predicción — revise la consola.');
+      }
+    }
+
+    // botones
+    $('predictBtn').addEventListener('click', predict);
+    $('fillExample').addEventListener('click', ()=>{
+      // ejemplo tomado de su dataset
+      $('cityCode').value = 0;
+      $('meters').value = 60;
+      $('rooms').value = 2;
+      $('floors').value = 2;
+      $('elevator').value = 0;
+      $('exterior').value = 1;
+      $('state').value = 1;
+      $('central').value = 1;
+    });
+
+    $('downloadModel').addEventListener('click', ()=>{
+      alert('Ruta modelo (configurada): ' + MODEL_PATH + '\n\nSi aparece error al cargar, sirva la página desde un servidor y verifique que exista model/model.json.');
+    });
+
+    // inicializar
+    init();
+  </script>
+</body>
+</html>

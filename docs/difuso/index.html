@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulador Difuso: Propina del Mesero</title>
+  <style>
+    :root{
+      --bg:#f6fbf7;
+      --panel:#ffffff;
+      --accent:#2b9f6a; /* verde moderno */
+      --accent-2:#7bd89c;
+      --muted:#6b6b6b;
+      --glass: rgba(255,255,255,0.6);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:#0b2b1f}
+    .app{display:grid;grid-template-columns:360px 1fr 360px;gap:18px;padding:18px;height:100vh}
+
+    /* Left panel - configuración */
+    .panel{background:var(--panel);border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(15, 40, 20, 0.06)}
+    h2{margin:4px 0 12px;font-size:16px;color:var(--accent)}
+    .section-title{font-weight:600;margin:12px 0 8px}
+    .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    label{display:block;font-size:13px;color:var(--muted)}
+    input[type="number"], input[type="text"]{width:100%;padding:8px;border-radius:8px;border:1px solid #e8efe9;background:#fbfff9}
+    .small{font-size:12px;color:#4b674f}
+
+    .control-group{margin-bottom:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(123,216,156,0.08), rgba(123,216,156,0.02));}
+    .row{display:flex;gap:8px;align-items:center}
+    .row > *{flex:1}
+
+    /* Center: gráficas y salida */
+    .center{display:flex;flex-direction:column;gap:12px}
+    .charts{display:flex;gap:12px}
+    .chart-card{flex:1;min-height:180px;padding:12px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfff9);box-shadow:0 6px 12px rgba(11,43,31,0.04)}
+    canvas{width:100%;height:220px;border-radius:8px;background:transparent}
+    .output-card{height:220px;padding:12px;border-radius:10px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+
+    /* Right: reportes */
+    .report{display:flex;flex-direction:column;gap:10px}
+    .report .item{padding:10px;border-radius:8px;background:#ffffff}
+    .muted{color:var(--muted)}
+
+    /* buttons */
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:10px;border:none;cursor:pointer}
+    .btn-ghost{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 12px;border-radius:10px}
+
+    /* Inputs for ranges labels */
+    .label-title{font-weight:700;color:#11462f}
+    .range-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+    .range-row input{width:78px}
+
+    footer.small{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+
+    /* small table in report */
+    table{width:100%;border-collapse:collapse}
+    td,th{padding:6px;border-bottom:1px solid #f0f6f0;text-align:left;font-size:13px}
+
+    /* desktop-only note */
+    .note{font-size:13px;color:#336b44}
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: configuración -->
+    <div class="panel">
+      <h2>Configuración de conjuntos (0 - 10)</h2>
+      <div class="note">Modifica los rangos y presiona <strong>Actualizar</strong>.</div>
+
+      <div class="control-group">
+        <div class="label-title">Servicio (trapezoidal)</div>
+        <div class="range-row">
+          <label class="small">Pobre (a,b,c,d)</label>
+        </div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="svc_pobre_a" value="0" min="0" max="10">
+          <input type="number" step="0.1" id="svc_pobre_b" value="0" min="0" max="10">
+          <input type="number" step="0.1" id="svc_pobre_c" value="3" min="0" max="10">
+          <input type="number" step="0.1" id="svc_pobre_d" value="5" min="0" max="10">
+        </div>
+
+        <div class="range-row"><label class="small">Bueno (a,b,c,d)</label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="svc_bueno_a" value="3" min="0" max="10">
+          <input type="number" step="0.1" id="svc_bueno_b" value="4" min="0" max="10">
+          <input type="number" step="0.1" id="svc_bueno_c" value="6" min="0" max="10">
+          <input type="number" step="0.1" id="svc_bueno_d" value="7" min="0" max="10">
+        </div>
+
+        <div class="range-row"><label class="small">Excelente (a,b,c,d)</label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="svc_exc_a" value="6" min="0" max="10">
+          <input type="number" step="0.1" id="svc_exc_b" value="8" min="0" max="10">
+          <input type="number" step="0.1" id="svc_exc_c" value="10" min="0" max="10">
+          <input type="number" step="0.1" id="svc_exc_d" value="10" min="0" max="10">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="label-title">Comida (trapezoidal)</div>
+        <div class="range-row"><label class="small">Mala (a,b,c,d)</label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="food_mala_a" value="0" min="0" max="10">
+          <input type="number" step="0.1" id="food_mala_b" value="0" min="0" max="10">
+          <input type="number" step="0.1" id="food_mala_c" value="2" min="0" max="10">
+          <input type="number" step="0.1" id="food_mala_d" value="4" min="0" max="10">
+        </div>
+
+        <div class="range-row"><label class="small">Normal (a,b,c,d)</label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="food_norm_a" value="3" min="0" max="10">
+          <input type="number" step="0.1" id="food_norm_b" value="4" min="0" max="10">
+          <input type="number" step="0.1" id="food_norm_c" value="6" min="0" max="10">
+          <input type="number" step="0.1" id="food_norm_d" value="7" min="0" max="10">
+        </div>
+
+        <div class="range-row"><label class="small">Deliciosa (a,b,c,d)</label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="food_del_a" value="6" min="0" max="10">
+          <input type="number" step="0.1" id="food_del_b" value="8" min="0" max="10">
+          <input type="number" step="0.1" id="food_del_c" value="10" min="0" max="10">
+          <input type="number" step="0.1" id="food_del_d" value="10" min="0" max="10">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="label-title">Propina (triangular - a,b,c)</div>
+        <div class="range-row small"><label> Tacaña (a,b,c) </label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="tip_tac_a" value="0" min="0" max="10">
+          <input type="number" step="0.1" id="tip_tac_b" value="1.5" min="0" max="10">
+          <input type="number" step="0.1" id="tip_tac_c" value="3" min="0" max="10">
+        </div>
+        <div class="range-row small"><label> Promedio (a,b,c) </label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="tip_prom_a" value="2" min="0" max="10">
+          <input type="number" step="0.1" id="tip_prom_b" value="5" min="0" max="10">
+          <input type="number" step="0.1" id="tip_prom_c" value="8" min="0" max="10">
+        </div>
+        <div class="range-row small"><label> Generosa (a,b,c) </label></div>
+        <div class="set-grid">
+          <input type="number" step="0.1" id="tip_gen_a" value="6" min="0" max="10">
+          <input type="number" step="0.1" id="tip_gen_b" value="8" min="0" max="10">
+          <input type="number" step="0.1" id="tip_gen_c" value="10" min="0" max="10">
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="btn_update" class="btn">Actualizar</button>
+        <button id="btn_reset" class="btn-ghost">Restablecer valores</button>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid #eef7ee">
+      <div class="label-title">Entradas</div>
+      <div class="row" style="margin-bottom:8px">
+        <div>
+          <label class="small">Valor Servicio (0-10)</label>
+          <input id="input_service" type="number" min="0" max="10" step="0.1" value="7">
+        </div>
+        <div>
+          <label class="small">Valor Comida (0-10)</label>
+          <input id="input_food" type="number" min="0" max="10" step="0.1" value="6">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button id="btn_compute" class="btn">Calcular</button>
+        <button id="btn_sample1" class="btn-ghost">Ejemplo: mal servicio</button>
+      </div>
+
+      <footer class="small">---.</footer>
+    </div>
+
+    <!-- CENTER: gráficas y salida -->
+    <div class="center">
+      <div class="charts">
+        <div class="chart-card">
+          <div class="label-title">Servicio</div>
+          <canvas id="canvas_service"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="label-title">Comida</div>
+          <canvas id="canvas_food"></canvas>
+        </div>
+      </div>
+
+      <div class="output-card panel">
+        <div class="label-title">Propina (Salida agregada)</div>
+        <canvas id="canvas_tip" style="height:180px"></canvas>
+        <div style="margin-top:8px;font-weight:700;font-size:16px;color:var(--accent)" id="final_output">Propina: -- (centroid)</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: reportes detallados -->
+    <div class="panel report">
+      <h2>Reportes detallados</h2>
+
+      <div class="item">
+        <div class="label-title">Grados de pertenencia</div>
+        <table>
+          <thead><tr><th>Conjunto</th><th>Etiqueta</th><th>μ</th></tr></thead>
+          <tbody id="table_memberships"></tbody>
+        </table>
+      </div>
+
+      <div class="item">
+        <div class="label-title">Activación de reglas</div>
+        <table>
+          <thead><tr><th>Regla</th><th>Descripción</th><th>Valor</th></tr></thead>
+          <tbody id="table_rules"></tbody>
+        </table>
+      </div>
+
+      <div class="item">
+        <div class="label-title">Detalle de desfuzzificación</div>
+        <div class="muted">Método: Centroide</div>
+        <div style="margin-top:8px">
+          <div>Numerador: <span id="cent_num">-</span></div>
+          <div>Denominador: <span id="cent_den">-</span></div>
+          <div style="margin-top:6px;font-weight:700">Resultado (centroid): <span id="cent_val">-</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- UTIL: funciones de membresía ---
+    function trapezoid(x,a,b,c,d){
+      if(x<=a) return 0;
+      if(x<=b) return (x-a)/(b-a || 1e-9);
+      if(x<=c) return 1;
+      if(x<=d) return (d-x)/(d-c || 1e-9);
+      return 0;
+    }
+    function triangle(x,a,b,c){
+      if(x<=a) return 0;
+      if(x<=b) return (x-a)/(b-a || 1e-9);
+      if(x<=c) return (c-x)/(c-b || 1e-9);
+      return 0;
+    }
+
+    // DOM refs
+    const dom = {
+      svc: {
+        pobre: ['svc_pobre_a','svc_pobre_b','svc_pobre_c','svc_pobre_d'],
+        bueno: ['svc_bueno_a','svc_bueno_b','svc_bueno_c','svc_bueno_d'],
+        exc: ['svc_exc_a','svc_exc_b','svc_exc_c','svc_exc_d']
+      },
+      food: {
+        mala: ['food_mala_a','food_mala_b','food_mala_c','food_mala_d'],
+        norm: ['food_norm_a','food_norm_b','food_norm_c','food_norm_d'],
+        del: ['food_del_a','food_del_b','food_del_c','food_del_d']
+      },
+      tip: {
+        tac: ['tip_tac_a','tip_tac_b','tip_tac_c'],
+        prom: ['tip_prom_a','tip_prom_b','tip_prom_c'],
+        gen: ['tip_gen_a','tip_gen_b','tip_gen_c']
+      }
+    }
+
+    function getRange(ids){
+      return ids.map(id=>parseFloat(document.getElementById(id).value));
+    }
+
+    // canvases
+    const cvsSvc = document.getElementById('canvas_service');
+    const ctxSvc = cvsSvc.getContext('2d');
+    const cvsFood = document.getElementById('canvas_food');
+    const ctxFood = cvsFood.getContext('2d');
+    const cvsTip = document.getElementById('canvas_tip');
+    const ctxTip = cvsTip.getContext('2d');
+
+    // responsive canvas sizing (desktop only)
+    function sizeCanvases(){
+      [cvsSvc,cvsFood].forEach(c=>{c.width = c.clientWidth * devicePixelRatio; c.height = 220 * devicePixelRatio; c.style.height='220px';});
+      cvsTip.width = cvsTip.clientWidth * devicePixelRatio; cvsTip.height = 180 * devicePixelRatio; cvsTip.style.height='180px';
+      drawAll();
+    }
+    window.addEventListener('resize', ()=>{sizeCanvases()});
+
+    // default compute on load
+    document.getElementById('btn_update').addEventListener('click', ()=>{ drawAll(); compute(); });
+    document.getElementById('btn_reset').addEventListener('click', ()=>{ resetDefaults(); drawAll(); compute(); });
+    document.getElementById('btn_compute').addEventListener('click', ()=>{ compute(); });
+    document.getElementById('btn_sample1').addEventListener('click', ()=>{ document.getElementById('input_service').value = 1; document.getElementById('input_food').value = 1; compute(); });
+
+    function readSets(){
+      const svc = {
+        pobre: getRange(dom.svc.pobre),
+        bueno: getRange(dom.svc.bueno),
+        exc: getRange(dom.svc.exc)
+      };
+      const food = {
+        mala: getRange(dom.food.mala),
+        norm: getRange(dom.food.norm),
+        del: getRange(dom.food.del)
+      };
+      const tip = {
+        tac: getRange(dom.tip.tac),
+        prom: getRange(dom.tip.prom),
+        gen: getRange(dom.tip.gen)
+      };
+      return {svc,food,tip};
+    }
+
+    // draw helpers
+    function clear(ctx){
+      ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    }
+    function drawAxes(ctx){
+      ctx.save();
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.lineWidth=1; ctx.strokeStyle='#e6f3ea';
+      ctx.beginPath();
+      for(let i=0;i<=10;i+=1){
+        const x = (i/10)*(ctx.canvas.clientWidth);
+        ctx.moveTo(x,0); ctx.lineTo(x,ctx.canvas.clientHeight);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMembership(ctx, sets, isTip){
+      // sets: {label: [a,b,c,d] or [a,b,c]}
+      const w = ctx.canvas.width, h = ctx.canvas.height; // device pixels
+      const cw = ctx.canvas.clientWidth, ch = ctx.canvas.clientHeight;
+      ctx.save(); ctx.scale(devicePixelRatio, devicePixelRatio);
+      clear(ctx);
+      // background
+      ctx.fillStyle = 'rgba(250,255,250,0.7)'; ctx.fillRect(0,0,cw,ch);
+      // axes
+      ctx.strokeStyle = '#e6f3ea'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0,ch-20); ctx.lineTo(cw,ch-20); ctx.stroke();
+      ctx.font='12px Inter'; ctx.fillStyle='#356443';
+      for(let i=0;i<=10;i++){ const x = (i/10)*cw; ctx.fillText(i.toString(), x-6, ch-4); }
+
+      const colors = {'0':'#2b9f6a','1':'#7bd89c','2':'#1b5e3d'};
+      let idx=0;
+      for(const label in sets){
+        ctx.beginPath();
+        const params = sets[label];
+        for(let px=0; px<=cw; px+=2){
+          const xVal = (px/cw)*10;
+          let mu = 0;
+          if(params.length===4) mu = trapezoid(xVal,params[0],params[1],params[2],params[3]);
+          else mu = triangle(xVal,params[0],params[1],params[2]);
+          const y = ch - 24 - (mu*(ch-40));
+          if(px===0) ctx.moveTo(px,y); else ctx.lineTo(px,y);
+        }
+        ctx.lineWidth=2; ctx.strokeStyle=colors[idx] || '#2b9f6a'; ctx.stroke();
+        // label near peak
+        const peakX = ((params[(params.length===4?1:1)] + params[(params.length===4?2:1)])/2)/10*cw;
+        ctx.fillStyle = '#174a2f'; ctx.fillText(label, peakX, 18);
+        idx++;
+      }
+      ctx.restore();
+    }
+
+    function drawTipAggregated(ctx, tipSets, aggFunc){
+      const w = ctx.canvas.width, h = ctx.canvas.height; const cw = ctx.canvas.clientWidth, ch = ctx.canvas.clientHeight;
+      ctx.save(); ctx.scale(devicePixelRatio, devicePixelRatio);
+      clear(ctx);
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,cw,ch);
+      // axes
+      ctx.strokeStyle='#e6f3ea'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,ch-20); ctx.lineTo(cw,ch-20); ctx.stroke();
+      ctx.font='12px Inter'; ctx.fillStyle='#174a2f';
+      for(let i=0;i<=10;i++){ const x=(i/10)*cw; ctx.fillText(i.toString(), x-6, ch-4); }
+
+      // draw each base triangular
+      const labels = Object.keys(tipSets);
+      const baseColors = {'tac':'#2b9f6a','prom':'#7bd89c','gen':'#1b5e3d'};
+      // draw aggregated surface (as filled shape)
+      // compute aggregated mu across domain
+      const samples = 800;
+      const xs = []; const mus = [];
+      for(let i=0;i<=samples;i++){
+        const xVal = (i/samples)*10;
+        let m = 0;
+        for(const key in tipSets){
+          const params = tipSets[key];
+          const baseMu = triangle(xVal, params[0], params[1], params[2]);
+          const clipped = Math.min(baseMu, aggFunc[key]||0);
+          m = Math.max(m, clipped);
+        }
+        xs.push(xVal); mus.push(m);
+      }
+      // fill aggregated
+      ctx.beginPath();
+      for(let i=0;i<xs.length;i++){ const px = (xs[i]/10)*cw; const py = ch-24 - mus[i]*(ch-40); if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px,py);} 
+      // baseline to close
+      ctx.lineTo(cw, ch-24); ctx.lineTo(0,ch-24); ctx.closePath();
+      ctx.fillStyle='rgba(43,159,106,0.18)'; ctx.fill();
+      ctx.strokeStyle='rgba(43,159,106,0.35)'; ctx.stroke();
+
+      // draw each triangle outline scaled by activation
+      for(const key in tipSets){
+        const params = tipSets[key];
+        ctx.beginPath();
+        for(let i=0;i<=samples;i++){
+          const xVal = (i/samples)*10;
+          const baseMu = triangle(xVal, params[0], params[1], params[2]);
+          const clipped = Math.min(baseMu, aggFunc[key]||0);
+          const px = (xVal/10)*cw; const py = ch-24 - clipped*(ch-40);
+          if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+        }
+        ctx.strokeStyle=baseColors[key] || '#2b9f6a'; ctx.lineWidth=1.5; ctx.stroke();
+      }
+
+      ctx.restore();
+      return {xs,mus};
+    }
+
+    // inference engine
+    function infer(serviceVal, foodVal, sets){
+      // compute memberships
+      const svcMu = {
+        pobre: trapezoid(serviceVal, ...sets.svc.pobre),
+        bueno: trapezoid(serviceVal, ...sets.svc.bueno),
+        exc: trapezoid(serviceVal, ...sets.svc.exc)
+      };
+      const foodMu = {
+        mala: trapezoid(foodVal, ...sets.food.mala),
+        norm: trapezoid(foodVal, ...sets.food.norm),
+        del: trapezoid(foodVal, ...sets.food.del)
+      };
+
+      // rules
+      // R1: if servicio pobre AND comida mala -> tacaña
+      const r1 = Math.min(svcMu.pobre, foodMu.mala);
+      // R2: if servicio bueno -> promedio
+      const r2 = svcMu.bueno;
+      // R3: if servicio excelente AND comida deliciosa -> generosa
+      const r3 = Math.min(svcMu.exc, foodMu.del);
+
+      // aggregation: for each output label, the activation is max of rules producing it
+      const outAct = { tac: r1, prom: r2, gen: r3 };
+
+      return {svcMu, foodMu, rules:{r1,r2,r3}, outAct};
+    }
+
+    function defuzzify_centroid(aggMus, tipSets){
+      // sample domain 0..10, compute numerator and denominator
+      const N = 1000;
+      let num=0, den=0;
+      for(let i=0;i<=N;i++){
+        const x = (i/N)*10;
+        // aggregated mu at x
+        let mu = 0;
+        for(const key in tipSets){
+          const baseMu = triangle(x, ...tipSets[key]);
+          const clipped = Math.min(baseMu, aggMus[key]||0);
+          mu = Math.max(mu, clipped);
+        }
+        num += x * mu;
+        den += mu;
+      }
+      const centroid = den===0?0:(num/den);
+      return {num,den,centroid};
+    }
+
+    function compute(){
+      const sets = readSets();
+      const svcVal = parseFloat(document.getElementById('input_service').value);
+      const foodVal = parseFloat(document.getElementById('input_food').value);
+      const inf = infer(svcVal, foodVal, sets);
+
+      // update tables
+      const memTbody = document.getElementById('table_memberships'); memTbody.innerHTML = '';
+      // service
+      for(const k in inf.svcMu){
+        const tr = document.createElement('tr'); tr.innerHTML = `<td>Servicio</td><td>${k}</td><td>${inf.svcMu[k].toFixed(3)}</td>`; memTbody.appendChild(tr);
+      }
+      for(const k in inf.foodMu){
+        const tr = document.createElement('tr'); tr.innerHTML = `<td>Comida</td><td>${k}</td><td>${inf.foodMu[k].toFixed(3)}</td>`; memTbody.appendChild(tr);
+      }
+
+      // rules
+      const rulesTbody = document.getElementById('table_rules'); rulesTbody.innerHTML='';
+      const r1tr = document.createElement('tr'); r1tr.innerHTML = `<td>R1</td><td>Si servicio Pobre Y comida Mala → Tacaña</td><td>${inf.rules.r1.toFixed(3)}</td>`; rulesTbody.appendChild(r1tr);
+      const r2tr = document.createElement('tr'); r2tr.innerHTML = `<td>R2</td><td>Si servicio Bueno → Promedio</td><td>${inf.rules.r2.toFixed(3)}</td>`; rulesTbody.appendChild(r2tr);
+      const r3tr = document.createElement('tr'); r3tr.innerHTML = `<td>R3</td><td>Si servicio Excelente Y comida Deliciosa → Generosa</td><td>${inf.rules.r3.toFixed(3)}</td>`; rulesTbody.appendChild(r3tr);
+
+      // defuzz
+      const def = defuzzify_centroid(inf.outAct, sets.tip);
+
+      document.getElementById('cent_num').textContent = def.num.toFixed(4);
+      document.getElementById('cent_den').textContent = def.den.toFixed(4);
+      document.getElementById('cent_val').textContent = def.centroid.toFixed(3);
+      document.getElementById('final_output').textContent = `Propina: ${def.centroid.toFixed(2)} (0-10)`;
+
+      // draw memberships and aggregated tip (fix: draw aggregated AFTER redrawing inputs so it isn't overwritten)
+      drawMembership(ctxSvc, sets.svc);
+      drawMembership(ctxFood, sets.food);
+      drawTipAggregated(ctxTip, sets.tip, inf.outAct);
+
+      return {inf,def};
+    }
+
+    function drawAll(){
+      const sets = readSets();
+      drawMembership(ctxSvc, sets.svc);
+      drawMembership(ctxFood, sets.food);
+      // draw tip base (without aggregation)
+      drawTipAggregated(ctxTip, sets.tip, {tac:0,prom:0,gen:0});
+    }
+
+    function resetDefaults(){
+      // reset to hard-coded defaults
+      const defaults = {
+        svc_pobre_a:0, svc_pobre_b:0, svc_pobre_c:3, svc_pobre_d:5,
+        svc_bueno_a:3, svc_bueno_b:4, svc_bueno_c:6, svc_bueno_d:7,
+        svc_exc_a:6, svc_exc_b:8, svc_exc_c:10, svc_exc_d:10,
+        food_mala_a:0, food_mala_b:0, food_mala_c:2, food_mala_d:4,
+        food_norm_a:3, food_norm_b:4, food_norm_c:6, food_norm_d:7,
+        food_del_a:6, food_del_b:8, food_del_c:10, food_del_d:10,
+        tip_tac_a:0, tip_tac_b:1.5, tip_tac_c:3,
+        tip_prom_a:2, tip_prom_b:5, tip_prom_c:8,
+        tip_gen_a:6, tip_gen_b:8, tip_gen_c:10
+      };
+      for(const k in defaults){ const el = document.getElementById(k); if(el) el.value = defaults[k]; }
+      document.getElementById('input_service').value = 7; document.getElementById('input_food').value = 6;
+    }
+
+    // initial setup
+    resetDefaults(); sizeCanvases(); compute();
+
+  </script>
+</body>
+</html>
